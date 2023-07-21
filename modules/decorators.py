@@ -15,3 +15,12 @@ def retry_on_error(func):
                 count += 1
                 print(f'On try number {count}, exception \n{e}\nwas caught. \nRetrying ... ({3-count} tries left).')
     return wrapper
+
+def map(func):
+
+    @functools.wraps(func)
+    def wrapper(args):
+        if isinstance(args, list):
+            return [ func(arg) for arg in args ]
+        return func(args)
+    return wrapper
