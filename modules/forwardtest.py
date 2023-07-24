@@ -1,29 +1,36 @@
 import vectorbt as vbt
 import json
-import pandas as pd
-import numpy as np
-import datetime, pytz
-import decorators as dct
 import traceback
+import os, ast, collections
+import pandas as pd, numpy as np
+import datetime, pytz
+
+import decorators as dct
 from vbt_strategies import Strategy as Strat
 import utils
-import os, ast
+import params_parser as parser
 
 class ForwardTest():
-    def __init__(self, params, strategy = None) -> None:
+    def __init__(self, params_txt, strategy = None) -> None:
+        
+        self.params_txt = params_txt
+        self.params = parser.parse(params_txt)
+
         if strategy is None :
             strat = Strat()
-            self.strategy = strat.__getattribute__(params['strategy_name'])
+            self.strategy = strat.__getattribute__(self.params['strategy_name'])
         else: 
             self.strategy = strategy
+
         self.check_strategy()
-        params_backtest = params['backtest']
-        self.params = params
-        self.params_strat = params['strat']
-        self.start_backtest = datetime.datetime(*[int(elem) for elem in params_backtest['start'].split('-')], tzinfo=pytz.timezone('UTC'))
-        self.end_backtest = datetime.datetime(*[int(elem) for elem in params_backtest['end'].split('-')], tzinfo=pytz.timezone('UTC'))
-        self.length_backtest = datetime.timedelta(**params_backtest['length'])
-        self.length_forward = datetime.timedelta(**params_backtest['forward'])
+        pb = self.params['backtest']
+        
+        self.params_strat = self.params['strat']
+        self.start_backtest = pb['start']
+        self.end_backtest = pb['end']
+        self.length_backtest = pb['length']
+        self.length_forward = pb['forward']
+        self.run_params = self.params['strat']['run_params']
         self.entries_list = []
         self.exits_list = []
         self.data = []
@@ -33,34 +40,27 @@ class ForwardTest():
             pass
         else :
             raise Exception("The strategy must have output_names match 'entries' and 'exits'. ")
-        
-    def _get_run_params(self):
-        run_params = {}
-        for key in self.params_strat['run_params']:
-            if key != "param_product":
-                run_params[key] = np.arange(**self.params_strat["run_params"][key])
-            else: 
-                run_params[key] = self.params_strat["run_params"][key] == "True"
-        return run_params
     
     def _prepare_data(self, tmp_data):
-        if type(self.params_strat['get_params']['column']) == list:
+        cols =  self.params['strat']['get_params']['column']
+        if isinstance(cols, list):
             data = {}
-            for elem in self.params_strat['get_params']['column']:
+            for elem in cols:
                 data[elem] = tmp_data[elem]
         else :
-            data = {self.params_strat['get_params']['column']: tmp_data}
+            data = {cols: tmp_data}
         return data
 
 
     def _get_best_params(self,start, end):
+        ps = self.params['strat']
         tmp_data = vbt.BinanceData.download(start = start, end = end ,
-                                            symbols= self.params_strat['download_params']['symbols'],
-                                            interval = self.params_strat['download_params']['interval']).get(**self.params_strat['get_params'])
-        run_params = self._get_run_params()
+                                            **ps['download_params']).get(**ps['get_params'])
+  
         tmp_data = self._prepare_data(tmp_data)
         
-        tmp_res = self.strategy.run(**tmp_data, **run_params)
+        tmp_res = self.strategy.run(**tmp_data, **self.run_params)
+
         tmp_pf = vbt.Portfolio.from_signals(close = tmp_data['Close'], 
                                             entries = tmp_res.entries, 
                                             exits = tmp_res.exits, **self.params['portfolio'])
@@ -72,16 +72,20 @@ class ForwardTest():
         return best
     
     def _play_best_params(self, start, end, best, init_cash = 1000):
+        ps = self.params['strat']
         data = vbt.BinanceData.download(start = start, end = end ,
-                                            **self.params_strat['download_params']).get(self.params_strat['get_params']['column'])
+                                            **ps['download_params']).get(ps['get_params']['column'])
+        
         self.data.append(data)
 
         data = self._prepare_data(data)
         real_res = self.strategy.run(**data, **best)
 
+        #record entries and exits
         self.entries_list.append(real_res.entries)
         self.exits_list.append(real_res.exits)
 
+        #compute effective strat executed
         real_pf = vbt.Portfolio.from_signals(close = data['Close'], 
                                              entries = real_res.entries, 
                                              exits = real_res.exits, 
@@ -92,17 +96,17 @@ class ForwardTest():
 
     def _backtest(self, init_cash = 1000):
 
+        pb = self.params['backtest']
+
         #compute start and end of backtest and forward test
         start = self.start_backtest
-        end = start + datetime.timedelta(**self.params['backtest']['length'])
+        end = start + pb['length']
         start_forward = end
-        end_forward = start_forward + datetime.timedelta(**self.params['backtest']['forward'])
+        end_forward = start_forward + pb['forward']
 
         #get best params
         tmp_best = self._get_best_params(start, end)
         cash = init_cash
-
-        #record entries and exits
         
         while end_forward < self.end_backtest:
             pf = self._play_best_params(start_forward, end_forward, tmp_best, cash)
@@ -115,11 +119,11 @@ class ForwardTest():
             print(f'Cash: {cash}')
 
             #compute start and end of backtest and forward test
-            start = end_forward - datetime.timedelta(**self.params['backtest']['length'])
+            start = start + pb['forward']
             end = end_forward
             start_forward = end
-            end_forward = start_forward + datetime.timedelta(**self.params['backtest']['forward'])
-
+            end_forward = start_forward + pb['forward']
+            
             #get best params
             tmp_best = self._get_best_params(start, end)
 
@@ -139,19 +143,24 @@ class ForwardTest():
                                              **self.params['portfolio']
                                             )
         self.pf = pf
-    
-    def _log(self):
-        #stack = traceback.extract_stack()
-        #splitterIndex = stack[-1].filename.rfind('/')
-        #parentFolder = stack[-1].filename[:splitterIndex]
+
+    def _getFoldersName(self): 
+        pb = self.params['backtest']
+        psd = self.params['strat']['download_params']
         resultsFolder = 'results'
         stratFolder = self.strategy.__name__
-        symbolFolder = self.params['strat']['download_params']['symbols']
-        itvFolder = self.params['strat']['download_params']['interval']
-        namedir =  f'{self.params["backtest"]["start"]}_' \
-                    f'{self.params["backtest"]["start"]}_' \
-                    f'{str(datetime.timedelta(**self.params["backtest"]["length"])).split(" ")[0]}_' \
-                    f'{str(datetime.timedelta(**self.params["backtest"]["forward"])).split(" ")[0]}'
+        symbolFolder = psd['symbols']
+        itvFolder = psd['interval']
+        namedir =  f'{pb["start"].date()}_' \
+                    f'{pb["end"].date()}_' \
+                    f'{str(pb["length"].days).split(" ")[0]}_' \
+                    f'{str(pb["forward"].days).split(" ")[0]}'
+        
+        return resultsFolder, stratFolder, symbolFolder, itvFolder, namedir
+        
+    def _log(self):
+        
+        resultsFolder, stratFolder, symbolFolder, itvFolder, namedir = self._getFoldersName()
 
         utils.go_or_create(resultsFolder)
         utils.go_or_create(stratFolder)
@@ -165,32 +174,29 @@ class ForwardTest():
         else: 
             id = max(numfiles) + 1
         self.pf.stats().to_csv(f'{id}_stats.csv')
-        utils.dict_to_txt(self.params, f'{id}_params')
+        utils.dict_to_txt(self.params_txt, f'{id}_params')
+
+        os.chdir('../../../../..')
 
     def _already_tried(self):
         try : 
-            resultsFolder = 'results'
-            stratFolder = self.strategy.__name__
-            symbolFolder = self.params['strat']['download_params']['symbols']
-            itvFolder = self.params['strat']['download_params']['interval']
-            namedir =  f'{self.params["backtest"]["start"]}_' \
-                        f'{self.params["backtest"]["start"]}_' \
-                        f'{str(datetime.timedelta(**self.params["backtest"]["length"])).split(" ")[0]}_' \
-                        f'{str(datetime.timedelta(**self.params["backtest"]["forward"])).split(" ")[0]}'
+            resultsFolder, stratFolder, symbolFolder, itvFolder, namedir = self._getFoldersName()
 
             os.chdir(f'{resultsFolder}/{stratFolder}/{symbolFolder}/{itvFolder}/{namedir}')
             return_back = '../../../../..'
-        except:
+        except Exception as e:
             return False, ''
 
         params_files = [file for file in os.listdir() if (os.path.isfile(file) and file.endswith('_params.txt'))]
         for file in params_files:
             with open(file) as f:
-                d = ast.literal_eval(f.read())['dict']
-            if d == self.params:
+                d = json.load(f)
+
+            if d == self.params_txt:
                 path = os.getcwd()
                 os.chdir(return_back)
                 return True, path +'/' + file
+            
         os.chdir(return_back)
         return False, ''
         

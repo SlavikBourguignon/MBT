@@ -2,19 +2,28 @@ import sys
 sys.path.append('modules/')
 from forwardtest import ForwardTest
 from vbt_strategies import Strategy as Strat
+import  metaparams as mp
+import utils
 import warnings
+
 warnings.filterwarnings("ignore")
 
 params = {
+    'strategy_name': 'Trix',
     'backtest': {
         'start': '2017-10-1',
         'end': '2017-12-1',
-        'length': {
+        'length': [{
             'weeks': 4  #durée pendant laquelle on optimise les paramètres
-        },
-        'forward': {
+        }, {
+            'weeks': 6  #durée pendant laquelle on optimise les paramètres
+        }],
+        'forward': [{
             'weeks': 2  #durée pendant laquelle on joue les paramètres optimisés
-        },
+        },{
+            'weeks': 1  #durée pendant laquelle on joue les paramètres optimisés
+        }], 
+        'params_product': True
         
     },
     'strat':{
@@ -28,7 +37,7 @@ params = {
         'run_params': { 
             'ema_window': {'start': 5, 'stop': 20, 'step': 1},
             'signal': {'start': 10, 'stop': 30, 'step': 1},
-            'param_product': 'True'
+            'param_product': True
         }, 
     },
     'portfolio': {'freq': 'H' ,
@@ -38,5 +47,9 @@ params = {
 }
 
 strat = Strat()
-test = ForwardTest(params, strat.Trix)
-test.run()
+paramsList = mp.split(params)
+for i, p in enumerate(paramsList):
+
+        test = ForwardTest(p)
+        test.run(log = True)
+        print(f'Finished computing the set of parameters number {i}')

@@ -3,6 +3,11 @@ import json
 import ast
 import collections
 
+def debug(*args, **kwargs):
+    print('debug'+95*'=')
+    print(*args, **kwargs)
+    print(100*'=')
+    
 def go_or_create(dir):
     if os.path.isdir(dir):
         os.chdir(dir)
@@ -11,8 +16,6 @@ def go_or_create(dir):
         os.chdir(dir)
 
 def dict_to_txt(dict, name):
-    dict = {'dict': dict}
-
     with open('{}.txt'.format(name), 'w') as file:
         file.write(json.dumps(dict, indent=4))
 

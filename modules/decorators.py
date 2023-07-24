@@ -2,6 +2,8 @@
 import functools
 import traceback
 import os
+import copy
+import itertools
 
 def retry_on_error(func):
     
@@ -16,11 +18,58 @@ def retry_on_error(func):
                 print(f'On try number {count}, exception \n{e}\nwas caught. \nRetrying ... ({3-count} tries left).')
     return wrapper
 
-def map(func):
+
+def product_args(func):
 
     @functools.wraps(func)
-    def wrapper(args):
-        if isinstance(args, list):
-            return [ func(arg) for arg in args ]
-        return func(args)
+    def wrapper(*args):
+        res = []
+        for arg in args :
+            if isinstance(arg, list):
+                res.append(arg)
+            else:
+                res.append([arg])
+
+        cart_prod = list(itertools.product(*res))
+
+        return [func(*sublist) for sublist in cart_prod]
+
+    return wrapper       
+
+def map_args(func):
+
+    @functools.wraps(func)
+    def wrapper(*args):
+        args = list(args)
+        for elem in args: 
+            if isinstance(elem, list):
+                length = len(elem)
+                break
+        try :
+            length
+        except:
+            return func(args)
+
+        for i, elem in enumerate(args):
+            if isinstance(elem, list):
+                if len(elem) != length:
+                    raise Exception("All arguments need to be of same length if it's a list")
+            
+            else : 
+                args[i] = length * [elem]
+
+        def get_args_i(args, i):
+            return [elem[i] for elem in args]
+        
+        res = []
+        for i in range(length):
+            res.extend(func(*get_args_i(args, i)))
+        return res 
+    
     return wrapper
+
+
+
+
+
+            
