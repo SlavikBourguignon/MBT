@@ -3,7 +3,7 @@ import functools
 import traceback
 import os
 import copy
-import itertools
+import itertools, time
 
 def retry_on_error(func):
     
@@ -69,6 +69,17 @@ def map_args(func):
     return wrapper
 
 
+def timeit(func):
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        ts = time.time()
+        result = func(*args, **kwargs)
+        te = time.time()
+
+        print (f'func:{func.__name__} took: {te - ts} sec') 
+        return result
+    return wrapper
 
 
 
