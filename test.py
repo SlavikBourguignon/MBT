@@ -12,7 +12,7 @@ params = {
     'strategy_name': 'Trix',
     'backtest': {
         'start': '2017-10-1',
-        'end': '2017-12-1',
+        'end': '2023-1-1',
         'length': [{
             'weeks': 4  #durée pendant laquelle on optimise les paramètres
         }, {
@@ -43,13 +43,15 @@ params = {
     'portfolio': {'freq': 'H' ,
                   'fees' : 0.1/100,
                   'size_type': 'Percent',
-                  'size': .1} #proportion du portefeuille à investir dans chaque trade
+                  'size': .3} #proportion du portefeuille à investir dans chaque trade
 }
 
 strat = Strat()
 paramsList = mp.split(params)
 for i, p in enumerate(paramsList):
-
+    try:
         test = ForwardTest(p)
         test.run(log = True)
         print(f'Finished computing the set of parameters number {i}')
+    except Exception as e:
+        print('Failed in test.py with: \n', e)
