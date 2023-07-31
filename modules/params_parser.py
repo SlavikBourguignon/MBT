@@ -5,13 +5,18 @@ import decorators as dct
 import numpy as np
 
 
+def _to_datetime(s : str) -> datetime.datetime:
+        return datetime.datetime(*[int(elem) for elem in s.split('-')], tzinfo=pytz.timezone('UTC'))
+
+
+def _duplicate_elem(path, value, d: dict) -> dict:
+    pass
+
 def _parseData(Data: dict) -> dict:
 
-    def to_datetime(s : str) -> datetime.datetime:
-        return datetime.datetime(*[int(elem) for elem in s.split('-')], tzinfo=pytz.timezone('UTC'))
-    
-    start = to_datetime(Data['download_params']['start'])
-    end = to_datetime(Data['download_params']['end'])
+        
+    start = _to_datetime(Data['download_params']['start'])
+    end = _to_datetime(Data['download_params']['end'])
 
     dp = {'start': start,
           'end': end,
