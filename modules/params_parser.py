@@ -3,72 +3,105 @@ import collections, copy
 from typing import Union 
 import decorators as dct
 import numpy as np
+import utils
 
 
 def _to_datetime(s : str) -> datetime.datetime:
         return datetime.datetime(*[int(elem) for elem in s.split('-')], tzinfo=pytz.timezone('UTC'))
 
+@dct.map_args
+def _to_timedelta(d : dict) -> datetime.timedelta:
+        return datetime.timedelta(**d)
 
-def _duplicate_elem(path, value, d: dict) -> dict:
-    pass
+@dct.product_args
+def _duplicate_elem(path : tuple, value : any, d: dict) -> dict:
+    cp = copy.deepcopy(d)
+    if len(path) > 1 and isinstance(path, tuple):
+        s = cp[path[0]]
+        for key in path[1:-1] :
+            s = s[key]
+        s[path[-1]] = value
 
-def _parseData(Data: dict) -> dict:
-
-        
-    start = _to_datetime(Data['download_params']['start'])
-    end = _to_datetime(Data['download_params']['end'])
-
-    dp = {'start': start,
-          'end': end,
-          'symbols': copy.deepcopy(Data['download_params']['symbols']),
-          'interval':  copy.deepcopy(Data['download_params']['interval'])}
     
+    else:
+        cp.pop(path[0])
+        cp[path[0]] = value
+    return cp
+
+def _extend_first_level_dict(d : dict):
+    dL = copy.deepcopy(d)
+    i = 0
+    for key in dL.keys():
+        dL = _duplicate_elem((key,), d[key], dL) 
+        i+= 1
+    return dL
+
+def _extendData(Data: dict)-> list[dict]:
+    
+    dp = copy.deepcopy(Data['download_params'])
+    dp = _extend_first_level_dict(dp)
     gp = copy.deepcopy(Data['get_params'])
 
-    return {'download_params': dp, 'get_params': gp}
+    return _extend_first_level_dict({'download_params': dp, 'get_params': gp})
 
-def _parseRun(Run: dict) -> dict:
-    sn = copy.deepcopy(Run['strategy_name'])
+@dct.map_args
+def _parseData(dataTxt: dict) -> [dict, dict]:
+    dp = copy.deepcopy(dataTxt['download_params'])
+    start = _to_datetime(dataTxt['download_params']['start'])
+    end = _to_datetime(dataTxt['download_params']['end'])
+
+    dp.pop('start')
+    dp['start'] = start 
+    dp.pop('end')
+    dp['end'] = end
+    
+    gp = copy.deepcopy(dataTxt['get_params'])
+
+    return dataTxt, {'download_params': dp, 'get_params': gp}
+
+@dct.map_args
+def _parseRun(runTxt: dict) -> [dict, dict]:
+    sn = copy.deepcopy(runTxt['strategy_name'])
 
     inputs = {}
     
     pp = 'param_product'
-    for key in Run['inputs']:
+    for key in runTxt['inputs']:
         if key != pp: 
-            inputs[key] = np.arange(**Run['inputs'][key])
+            inputs[key] = np.arange(**runTxt['inputs'][key])
 
-    inputs[pp] = Run['inputs'][pp] \
-                                if pp in Run['inputs'].keys() \
+    inputs[pp] = runTxt['inputs'][pp] \
+                                if pp in runTxt['inputs'].keys() \
                                 else False
 
-    return {'strategy_name': sn, 'inputs': inputs}      
+    return runTxt, {'strategy_name': sn, 'inputs': inputs}      
 
+def _extendBT(BT: dict)-> list[dict]:
+    return _extend_first_level_dict(BT)
 
-def _parseBT(BT : dict) -> dict:
+@dct.map_args
+def _parseBT(btTxt : dict) -> [dict, dict]:
     #parse backtest params
     
+    length = _to_timedelta(btTxt['length'])
+    forward = _to_timedelta(btTxt['forward'])
 
-    def parse_timedelta(d : dict) -> datetime.timedelta:
-        return datetime.timedelta(**d)
-    
-    length = parse_timedelta(BT['length'])
-    forward = parse_timedelta(BT['forward'])
-
-    key = 'param_product'
-    params_product = BT[key] if key in BT.keys() else False
-    
-    return {'length': length, 
+    return btTxt, {'length': length, 
             'forward': forward,
-            'param_product':params_product}
+        }
 
-def _parsePF(PF: dict) -> dict:
+def _extendPF(PF: dict)-> list[dict]:
+    return _extend_first_level_dict(copy.deepcopy(PF))
+
+@dct.map_args
+def _parsePF(pfTxt: dict) -> [dict, dict]:
     
-    return copy.deepcopy(PF)
+    return pfTxt, pfTxt
 
 
 def parse(Data, Run, BT, PF):
     
-    return  _parseData(Data), \
+    return  _parseData(_extendData(Data)), \
             _parseRun(Run), \
-            _parseBT(BT), \
-            _parsePF(PF)
+            _parseBT(_extendBT(BT)), \
+            _parsePF(_extendPF(PF))

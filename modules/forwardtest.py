@@ -3,13 +3,16 @@ import json
 import traceback
 import os, ast, collections
 import pandas as pd, numpy as np
-import datetime, pytz
+import datetime, pytz, time
 
 import decorators as dct
 from vbt_strategies import Strategy as Strat
 import utils
 import params_parser as parser
 
+import warnings
+
+warnings.filterwarnings("ignore")
      
 
 class ForwardTest():
@@ -91,7 +94,7 @@ class ForwardTest():
         return real_pf
 
     @dct.timeit
-    def compute_pf(self, paramsBT, paramsPF):
+    def compute_PF(self, paramsBT, paramsPF):
         self.paramsPF = paramsPF
         self.paramsBT = paramsBT
         self.entries_list = []
@@ -126,6 +129,7 @@ class ForwardTest():
     
     @dct.timeit
     def reconstruct_pf(self):
+
         self.entries_list = pd.concat(self.entries_list)
         self.exits_list = pd.concat(self.exits_list)
 
@@ -148,6 +152,18 @@ class ForwardTest():
         return pf
 
 
+    def test_time(self, Data, Run):
+        end = Data['download_params']['end']
+        Data['download_params']['end'] = Data['download_params']['start'] + datetime.timedelta(**{'weeks': 1})
+
+        
+        test = ForwardTest(Data)
+        t0 = time.time()
+        test.compute_entries_exits(Run)
+        t1 = time.time()
+        del test
+        print(f"Testing for 1 week took {int(t1 - t0)} seconds.\n"
+              f"The whole testing is estimated to take {(end - Data['download_params']['start']).days/7 * (t1 - t0)} seconds")
     
 
     
