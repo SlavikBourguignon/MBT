@@ -68,7 +68,7 @@ for dataTxt, data in Data:
         for pfTxt, pf in PF:
             try :
                 paramsTxt = utils.regroupParams (dataTxt, runTxt, btTxt, pfTxt)
-                tried, path = logger.verifyTried(paramsTxt, data, bt, Run)
+                tried, path = logger.verifyTried(paramsTxt, data, bt, run)
                 if not tried: 
                     test.compute_PF(bt, pf)
                     ptf = test.reconstruct_pf()

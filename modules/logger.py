@@ -29,6 +29,7 @@ def verifyTried(paramsTxt, paramsData, paramsBT, paramsRun):
             return_back = '../../../../..'
         
         except Exception as e:
+            utils.debug('Exception: ', e)
             return False, ''
 
         params_files = [file for file in os.listdir() \
@@ -37,7 +38,6 @@ def verifyTried(paramsTxt, paramsData, paramsBT, paramsRun):
         for file in params_files:
             with open(file) as f:
                 d = json.load(f)
-
             if d == paramsTxt:
                 path = os.getcwd()
                 os.chdir(return_back)
