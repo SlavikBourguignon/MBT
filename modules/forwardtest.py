@@ -9,13 +9,18 @@ import decorators as dct
 from vbt_strategies import Strategy as Strat
 import utils
 import params_parser as parser
+import time
 
 class ForwardTest():
     def __init__(self, params_txt, strategy = None) -> None:
         
         self.params_txt = params_txt
         self.params = parser.parse(params_txt)
-
+        self.loading_time_b = 0
+        self.loading_time_f = 0
+        self.computing_indics = 0
+        self.computing_trades = 0
+        self.computing_real_pf = 0
         if strategy is None :
             strat = Strat()
             self.strategy = strat.__getattribute__(self.params['strategy_name'])
@@ -54,17 +59,23 @@ class ForwardTest():
 
     def _get_best_params(self,start, end):
         ps = self.params['strat']
+        t0 = time.time()
         tmp_data = vbt.BinanceData.download(start = start, end = end ,
                                             **ps['download_params']).get(**ps['get_params'])
-  
+        self.loading_time_b += time.time() - t0
+
         tmp_data = self._prepare_data(tmp_data)
         
+        t0 = time.time()
         tmp_res = self.strategy.run(**tmp_data, **self.run_params)
+        self.computing_indics += time.time() - t0
 
+        t0 = time.time()
         tmp_pf = vbt.Portfolio.from_signals(close = tmp_data['Close'], 
                                             entries = tmp_res.entries, 
                                             exits = tmp_res.exits, **self.params['portfolio'])
-            
+        self.computing_trades += time.time() - t0
+
         tmp_best = tmp_pf.total_return().idxmax()
         best = {}
         for elem, value in zip(self.strategy.param_names, tmp_best) :
@@ -73,12 +84,16 @@ class ForwardTest():
     
     def _play_best_params(self, start, end, best, init_cash = 1000):
         ps = self.params['strat']
+
+        t0 = time.time()
         data = vbt.BinanceData.download(start = start, end = end ,
                                             **ps['download_params']).get(ps['get_params']['column'])
-        
+        self.loading_time_f += time.time() - t0
+
         self.data.append(data)
 
         data = self._prepare_data(data)
+        t0 = time.time()
         real_res = self.strategy.run(**data, **best)
 
         #record entries and exits
@@ -92,6 +107,7 @@ class ForwardTest():
                                              **self.params['portfolio'], 
                                              init_cash = init_cash
                                             )
+        self.computing_real_pf += time.time() - t0
         return real_pf
 
     def _backtest(self, init_cash = 1000):
@@ -209,6 +225,11 @@ class ForwardTest():
             self._backtest()
             self._aggregate_results()
             print(self.pf.stats())
+            utils.debug('loading time b: ',self.loading_time_b)
+            utils.debug('loading time f: ',self.loading_time_f)
+            utils.debug('computing indics: ',self.computing_indics)
+            utils.debug('computing trades: ',self.computing_trades)
+            utils.debug('computing real pf: ',self.computing_real_pf)
             if log: 
                 self._log()
         
