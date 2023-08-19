@@ -2,11 +2,14 @@ import os
 import json
 import ast
 import collections
+import pprint
 
-def debug(*args, **kwargs):
-    print('debug'+95*'=')
+def debug(*args, sep = '\n',  **kwargs):
+    if not 'sep' in kwargs.keys(): 
+        kwargs['sep'] = sep
+    print('debug'+45*'=')
     print(*args, **kwargs)
-    print(100*'=')
+    print(50*'=')
     
 def go_or_create(dir):
     if os.path.isdir(dir):
@@ -44,3 +47,10 @@ def split_meta_params(params):
         except:
             params_product = False
     
+def regroupParams(paramsData, paramsRun, paramsBT, paramsPF):
+    paramsTxt = {}
+    paramsTxt['paramsData'] = paramsData
+    paramsTxt['paramsRun'] = paramsRun
+    paramsTxt['paramsBT'] = paramsBT
+    paramsTxt['paramsPF'] = paramsPF
+    return paramsTxt

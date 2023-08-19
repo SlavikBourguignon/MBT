@@ -3,7 +3,13 @@ import functools
 import traceback
 import os
 import copy
-import itertools
+import itertools, time
+import utils
+
+import warnings
+
+warnings.filterwarnings("ignore")
+
 
 def retry_on_error(func):
     
@@ -48,7 +54,7 @@ def map_args(func):
         try :
             length
         except:
-            return func(args)
+            return func(*args)
 
         for i, elem in enumerate(args):
             if isinstance(elem, list):
@@ -63,13 +69,20 @@ def map_args(func):
         
         res = []
         for i in range(length):
-            res.extend(func(*get_args_i(args, i)))
+            res.append(func(*get_args_i(args, i)))
         return res 
     
     return wrapper
 
 
+def timeit(func):
 
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        ts = time.time()
+        result = func(*args, **kwargs)
+        te = time.time()
 
-
-            
+        print (f'func:{func.__name__} took: {te - ts} sec') 
+        return result
+    return wrapper
