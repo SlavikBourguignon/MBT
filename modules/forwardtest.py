@@ -68,8 +68,9 @@ class ForwardTest():
         tmp_pf = vbt.Portfolio.from_signals(close = tmp_data['Close'], 
                                             entries = entries, 
                                             exits = exits, **self.paramsPF)
-         
-        tmp_best = tmp_pf.total_return().idxmax()
+        #utils.debug(dir(tmp_pf))
+        expr = self.paramsBT['optimizer']('tmp_pf')
+        tmp_best = eval(expr).idxmax()#tmp_pf.total_return().idxmax()
         best = {}
         for elem, value in zip(self.strat.param_names, tmp_best) :
             best[elem] = value

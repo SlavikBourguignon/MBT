@@ -19,7 +19,7 @@ paramsData = {
         'download_params': {
             'start': '2017-10-1',
             'end': '2019-1-1',
-            'symbols': ['BTCUSDT', 'ETHUSDT' ],
+            'symbols': 'BTCUSDT',
             'interval': '1h',
             'show_progress': False   # To print the downloading progress   
         },
@@ -38,21 +38,20 @@ paramsRun = {
 }
 
 paramsBT = {
-    'length': [{
+    'length': {
         'weeks': 4  #durée pendant laquelle on optimise les paramètres
-    },{
-        'weeks': 6  #durée pendant laquelle on optimise les paramètres
-    }],
+    },
     'forward': {
         'weeks': 2  #durée pendant laquelle on joue les paramètres optimisés
     }, 
+    'optimizer': '"total_return" + 2 * "sharpe_ratio"' 
     #'param_product': True   
 }
 
 paramsPF = {
     'fees' : 0.1/100,
     'size_type': 'Percent',
-    'size': [0.3, 1], 
+    'size': 0.3, 
     'freq': 'H'
 }
 
