@@ -10,7 +10,7 @@ from vbt_strategies import Strategy as Strat
 import  metaparams as mp
 import params_parser as pp
 import utils, logger
-
+import copy
 
 
 
@@ -44,14 +44,22 @@ paramsBT = {
     'forward': {
         'weeks': 2  #durée pendant laquelle on joue les paramètres optimisés
     }, 
-    'optimizer': '"total_return" + 2 * "sharpe_ratio"' 
+    'optimizer': ['"max_drawdown"', '"total_return"'] 
     #'param_product': True   
 }
-
+"""
+[ 
+'alpha', 'annual_returns', 'annualized_return', 'annualized_volatility','beta','calmar_ratio', 
+'cumulative_returns', 'daily_returns', 'deflated_sharpe_ratio', 
+'down_capture', 'downside_risk' , 'information_ratio', 'max_drawdown', 'omega_ratio', 
+'returns', 'returns_acc', 'returns_stats', 
+'sharpe_ratio', 'sortino_ratio', 'stats', 'tail_ratio', 'to_doc', 
+'total_benchmark_return', 'total_profit', 'total_return', 'trades', 'trades_type', 'up_capture', 'update_config', 'value', 'value_at_risk', 'wrapper', 'writeable_attrs', 'xs']
+"""
 paramsPF = {
     'fees' : 0.1/100,
     'size_type': 'Percent',
-    'size': 0.3, 
+    'size': 0.2, 
     'freq': 'H'
 }
 
@@ -63,7 +71,9 @@ for dataTxt, data in Data:
     
     test = ForwardTest(data)
     test.compute_entries_exits(run)
+    
     for btTxt, bt in BT: 
+        used_kelly = False
         for pfTxt, pf in PF:
             try :
                 paramsTxt = utils.regroupParams (dataTxt, runTxt, btTxt, pfTxt)
@@ -72,7 +82,19 @@ for dataTxt, data in Data:
                     test.compute_PF(bt, pf)
                     ptf = test.reconstruct_pf()
                     logger.log(paramsTxt, data, run, bt, pf, ptf)
-
+                    if not used_kelly : 
+                        stats = ptf.stats()
+                        winrate, average_win, average_loss = stats['Win Rate [%]'] / 100, stats['Avg Winning Trade [%]'] / 100, abs(stats['Avg Losing Trade [%]'] /100) 
+                        
+                        pf_kelly = copy.deepcopy(pf)
+                        kelly_size = test.kelly_criterion(winrate, average_win, average_loss)
+                        pf_kelly['size'] = kelly_size
+                        test.compute_PF(bt, pf_kelly)
+                        ptf = test.reconstruct_pf()
+                        utils.debug(winrate, average_win, average_loss, kelly_size)
+                        utils.debug('kelly portfolio')
+                        logger.log(paramsTxt, data, run, bt, pf_kelly, ptf)
+                        used_kelly = True
                 else: 
                     print('This set of parameter has already been computed.\n'
                           'The results can be found here: \n'

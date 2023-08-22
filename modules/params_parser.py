@@ -13,6 +13,26 @@ def _to_datetime(s : str) -> datetime.datetime:
 @dct.map_args
 def _to_timedelta(d : dict) -> datetime.timedelta:
         return datetime.timedelta(**d)
+
+@dct.product_args
+def _to_python_expr(s, optimizertxt):
+    i = 0
+    nbquotes = 0 
+    prev_add = f'{s}.'
+    post_add = '()'
+    while True:
+        if i >= len(optimizertxt):
+            break
+        if optimizertxt[i] == '"':
+            if nbquotes%2 == 0:
+                optimizertxt = optimizertxt[:i] + prev_add + optimizertxt[i+1:]
+                i += len(prev_add)
+            if nbquotes%2 == 1:
+                optimizertxt = optimizertxt[:i] + post_add + optimizertxt[i+1:]
+                i+= len(post_add)
+            nbquotes+=1
+        i+=1
+    return optimizertxt
    
 @dct.product_args
 def _duplicate_elem(path : tuple, value : any, d: dict) -> dict:
@@ -88,26 +108,9 @@ def _parseBT(btTxt : dict) -> [dict, dict]:
     forward = _to_timedelta(btTxt['forward'])
     optimizertxt = btTxt['optimizer'] if 'optimizer' in btTxt.keys() else '"total_return"'
 
-    def wrapper(s, optimizertxt):
-        i = 0
-        nbquotes = 0 
-        prev_add = f'{s}.'
-        post_add = '()'
-        while True:
-            if i >= len(optimizertxt):
-                break
-            if optimizertxt[i] == '"':
-                if nbquotes%2 == 0:
-                    optimizertxt = optimizertxt[:i] + prev_add + optimizertxt[i+1:]
-                    i += len(prev_add)
-                if nbquotes%2 == 1:
-                    optimizertxt = optimizertxt[:i] + post_add + optimizertxt[i+1:]
-                    i+= len(post_add)
-                nbquotes+=1
-            i+=1
-        return optimizertxt
+    
 
-    optimizer = lambda s: wrapper(s, optimizertxt)
+    optimizer = lambda s: _to_python_expr(s, optimizertxt)
 
 
     return btTxt, {'length': length, 

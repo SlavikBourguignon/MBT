@@ -69,7 +69,7 @@ class ForwardTest():
                                             entries = entries, 
                                             exits = exits, **self.paramsPF)
         #utils.debug(dir(tmp_pf))
-        expr = self.paramsBT['optimizer']('tmp_pf')
+        expr = self.paramsBT['optimizer']('tmp_pf')[0]
         tmp_best = eval(expr).idxmax()#tmp_pf.total_return().idxmax()
         best = {}
         for elem, value in zip(self.strat.param_names, tmp_best) :
@@ -152,6 +152,8 @@ class ForwardTest():
         print(pf.stats())
         return pf
 
+    def kelly_criterion(self, winrate, average_win, average_loss):
+        return winrate/average_loss - (1 - winrate) / average_win 
 
     def test_time(self, Data, Run):
         end = Data['download_params']['end']

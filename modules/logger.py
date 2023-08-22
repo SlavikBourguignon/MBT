@@ -29,7 +29,7 @@ def verifyTried(paramsTxt, paramsData, paramsBT, paramsRun):
             return_back = '../../../../..'
         
         except Exception as e:
-            utils.debug('Exception: ', e)
+            #utils.debug('Exception: ', e)
             return False, ''
 
         params_files = [file for file in os.listdir() \
