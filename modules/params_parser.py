@@ -23,7 +23,7 @@ def _to_python_expr(s, optimizertxt):
     while True:
         if i >= len(optimizertxt):
             break
-        if optimizertxt[i] == '"':
+        if optimizertxt[i] == "!":
             if nbquotes%2 == 0:
                 optimizertxt = optimizertxt[:i] + prev_add + optimizertxt[i+1:]
                 i += len(prev_add)

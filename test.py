@@ -10,7 +10,7 @@ from vbt_strategies import Strategy as Strat
 import  metaparams as mp
 import params_parser as pp
 import utils, logger
-import copy
+import copy, json
 
 
 
@@ -18,7 +18,7 @@ import copy
 paramsData = {
         'download_params': {
             'start': '2017-10-1',
-            'end': '2019-1-1',
+            'end': '2023-1-1',
             'symbols': 'BTCUSDT',
             'interval': '1h',
             'show_progress': False   # To print the downloading progress   
@@ -39,12 +39,12 @@ paramsRun = {
 
 paramsBT = {
     'length': {
-        'weeks': 4  #durée pendant laquelle on optimise les paramètres
+        'weeks': 10  #durée pendant laquelle on optimise les paramètres
     },
     'forward': {
-        'weeks': 2  #durée pendant laquelle on joue les paramètres optimisés
+        'weeks': 5  #durée pendant laquelle on joue les paramètres optimisés
     }, 
-    'optimizer': ['"max_drawdown"', '"total_return"'] 
+    'optimizer': ['!max_drawdown!', '!total_return!', '!sharpe_ratio!'] 
     #'param_product': True   
 }
 """
@@ -62,8 +62,11 @@ paramsPF = {
     'size': 0.2, 
     'freq': 'H'
 }
-
-Data, Run, BT, PF = pp.parse(paramsData, paramsRun, paramsBT, paramsPF)
+params = {'paramsData': paramsData, 'paramsRun': paramsRun, 'paramsBT': paramsBT, 'paramsPF': paramsPF}
+json.dumps(params)
+with open('params/TrixTest.json', 'w', encoding='utf-8') as f:
+    json.dump(params, f, ensure_ascii=False, indent=4)
+""" Data, Run, BT, PF = pp.parse(paramsData, paramsRun, paramsBT, paramsPF)
 runTxt, run  = Run
 #logger.verifyTried(paramsTxt, Data, BT, Run)
 strat = Strat()
@@ -105,4 +108,4 @@ for dataTxt, data in Data:
                             'BT: ', bt, 
                             'PF: ',pf,
                             'Got exception: ', e,
-                            sep = '\n')
+                            sep = '\n') """

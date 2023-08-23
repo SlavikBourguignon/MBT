@@ -34,7 +34,7 @@ def get_all_params_files(folder):
     paramsList = []
     for file in files: 
         with open(file) as f:
-            d = ast.literal_eval(f.read())
+            d = json.load(f)
             paramsList.append(d)
     os.chdir('..')
     return paramsList
