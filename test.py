@@ -11,7 +11,7 @@ import  metaparams as mp
 import params_parser as pp
 import utils, logger
 import copy, json
-
+import ranking
 
 
 
@@ -44,7 +44,7 @@ paramsBT = {
     'forward': {
         'weeks': 5  #durée pendant laquelle on joue les paramètres optimisés
     }, 
-    'optimizer': ['!max_drawdown!', '!total_return!', '!sharpe_ratio!'] 
+    'optimizer': ['!max_drawdown!', '!total_return! - 2 * !max_drawdown!', '!sharpex_ratio!'] 
     #'param_product': True   
 }
 """
@@ -53,23 +53,27 @@ paramsBT = {
 'cumulative_returns', 'daily_returns', 'deflated_sharpe_ratio', 
 'down_capture', 'downside_risk' , 'information_ratio', 'max_drawdown', 'omega_ratio', 
 'returns', 'returns_acc', 'returns_stats', 
-'sharpe_ratio', 'sortino_ratio', 'stats', 'tail_ratio', 'to_doc', 
-'total_benchmark_return', 'total_profit', 'total_return', 'trades', 'trades_type', 'up_capture', 'update_config', 'value', 'value_at_risk', 'wrapper', 'writeable_attrs', 'xs']
+'sharpe_ratio', 'sortino_ratio', 'tail_ratio', 'to_doc', 
+'total_benchmark_return', 'total_profit', 'total_return',
+ 'value', 'value_at_risk', 'xs']
 """
 paramsPF = {
     'fees' : 0.1/100,
     'size_type': 'Percent',
-    'size': 0.2, 
+    'size': [0.2, 0.3, 0.4, 0.5], 
     'freq': 'H'
 }
-params = {'paramsData': paramsData, 'paramsRun': paramsRun, 'paramsBT': paramsBT, 'paramsPF': paramsPF}
+
+
+""" params = {'paramsData': paramsData, 'paramsRun': paramsRun, 'paramsBT': paramsBT, 'paramsPF': paramsPF}
 json.dumps(params)
 with open('params/TrixTest.json', 'w', encoding='utf-8') as f:
-    json.dump(params, f, ensure_ascii=False, indent=4)
-""" Data, Run, BT, PF = pp.parse(paramsData, paramsRun, paramsBT, paramsPF)
+    json.dump(params, f, ensure_ascii=False, indent=4) """
+Data, Run, BT, PF = pp.parse(paramsData, paramsRun, paramsBT, paramsPF)
 runTxt, run  = Run
 #logger.verifyTried(paramsTxt, Data, BT, Run)
 strat = Strat()
+"""
 for dataTxt, data in Data: 
     
     test = ForwardTest(data)
@@ -108,4 +112,10 @@ for dataTxt, data in Data:
                             'BT: ', bt, 
                             'PF: ',pf,
                             'Got exception: ', e,
-                            sep = '\n') """
+                            sep = '\n')
+"""
+results_df = ranking.get_results('results')
+
+conds = ['!End Value! > 120']
+sort_expr = '-!Max Drawdown [%]!'
+ranking.rank(results_df, sort_expr, conds)
