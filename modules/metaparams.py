@@ -5,8 +5,9 @@ import utils
 
 @dct.product_args
 def modify_1_key(params: dict, keyPath: tuple, value: any ) -> dict:
+    cp = copy.deepcopy(params)
     if len(keyPath) > 1 :
-        cp = copy.deepcopy(params)
+        
         s = cp[keyPath[0]]
         for key in keyPath[1:-1] :
             s = s[key]

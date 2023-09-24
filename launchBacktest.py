@@ -8,7 +8,7 @@ import bt_runner
 
 parser = argparse.ArgumentParser(description = 'This program backtests trading strategies using the vectorbt library.')
 
-parser.add_argument('-folderList', nargs = '*', default = ['params'])
+parser.add_argument('-folderList', nargs = '*', default = ['config'])
 parser.add_argument('-sendTelegramUpdates', nargs= 1, type= bool, default = True)
 
 
