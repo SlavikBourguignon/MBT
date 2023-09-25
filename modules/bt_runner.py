@@ -12,6 +12,8 @@ import  metaparams as mp
 import params_parser as pp
 import utils, logger
 import copy
+import decorators as dct
+
 
 def run(params):
     paramsData, paramsRun = params['paramsData'],params['paramsRun']
@@ -38,7 +40,7 @@ def run(params):
                         test.compute_PF(bt, pf)
                         ptf = test.reconstruct_pf()
 
-                        logger.log(paramsTxt, data, run, bt, pf, ptf)
+                        logger.log(paramsTxt, data, run, bt, pf, ptf, test.entries_list, test.exits_list)
 
                         if not usedKelly:
                             stats = ptf.stats()
@@ -55,7 +57,7 @@ def run(params):
                             
                             usedKelly = True
 
-                            logger.log(paramsTxt, data, run, bt, pf_kelly, ptf)
+                            logger.log(paramsTxt, data, run, bt, pf_kelly, ptf, test.entries_list, test.exits_list)
 
                     else: 
                         print('This set of parameter has already been computed.\n'
@@ -68,3 +70,4 @@ def run(params):
                             'PF: ',pf,
                             'Got exception: ', e,
                             sep = '\n')
+                    utils.send_error_message(data, bt, pf, e)

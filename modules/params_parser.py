@@ -127,6 +127,7 @@ def _parsePF(pfTxt: dict) -> [dict, dict]:
     return pfTxt, pfTxt
 
 
+@dct.timeit
 def parse(Data, Run, BT, PF):
     
     return  _parseData(_extendData(Data)), \

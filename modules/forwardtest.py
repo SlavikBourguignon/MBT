@@ -16,6 +16,8 @@ warnings.filterwarnings("ignore")
      
 
 class ForwardTest():
+    @dct.error_message_handling
+    @dct.telegram_update_backtest
     @dct.timeit
     def __init__(self, paramsData):
         self.paramsData = paramsData
@@ -28,7 +30,7 @@ class ForwardTest():
 
 
     
-
+    @dct.error_message_handling
     def _prepare_data(self, tmp_data):
         cols =  self.paramsData['get_params']['column']
         if isinstance(cols, list):
@@ -39,6 +41,8 @@ class ForwardTest():
             data = {cols: tmp_data}
         return data
 
+    @dct.error_message_handling
+    @dct.telegram_update_backtest
     @dct.timeit
     def compute_entries_exits(self, paramsRun):
         self.paramsRun = paramsRun
@@ -51,16 +55,18 @@ class ForwardTest():
         self.entries = indics.entries
         self.exits = indics.exits 
 
-
+    @dct.error_message_handling
     def _get_local_data(self, start, end):
         tmp_data = {}
         for key in self.data.keys():
             tmp_data[key] = self.data[key][start:end]
         return tmp_data
     
+    @dct.error_message_handling
     def _get_local_entries_exits(self, start, end):
         return self.entries[start:end], self.exits[start:end]
     
+    @dct.error_message_handling
     def _get_best_params(self,start, end):
         tmp_data = self._get_local_data(start, end)
         entries, exits = self._get_local_entries_exits (start, end)
@@ -76,7 +82,7 @@ class ForwardTest():
             best[elem] = value
         return best
     
-
+    @dct.error_message_handling
     def _play_best_params(self,start, end, best, init_cash = 1000):
         tmp_data = self._get_local_data(start, end)
         real_res = self.strat.run(**tmp_data, **best)
@@ -94,6 +100,7 @@ class ForwardTest():
                                             )
         return real_pf
 
+    @dct.error_message_handling
     @dct.timeit
     def compute_PF(self, paramsBT, paramsPF):
         self.paramsPF = paramsPF
@@ -127,7 +134,7 @@ class ForwardTest():
             tmp_best = self._get_best_params(start, end)
 
     
-    
+    @dct.error_message_handling
     @dct.timeit
     def reconstruct_pf(self):
 
@@ -151,10 +158,12 @@ class ForwardTest():
                                             )
         print(pf.stats())
         return pf
-
+    
+    @dct.error_message_handling
     def kelly_criterion(self, winrate, average_win, average_loss):
         return winrate/average_loss - (1 - winrate) / average_win 
 
+    @dct.error_message_handling
     def test_time(self, Data, Run):
         end = Data['download_params']['end']
         Data['download_params']['end'] = Data['download_params']['start'] + datetime.timedelta(**{'weeks': 1})

@@ -4,3 +4,4 @@ test.py
 results/
 conditionned.csv
 all_results.csv
+.env

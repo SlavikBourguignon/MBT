@@ -1,6 +1,7 @@
 import utils
 import os
 import json
+import pandas as pd
 
 
 def _getFoldersName(paramsData, paramsBT, paramsRun): 
@@ -47,7 +48,7 @@ def verifyTried(paramsTxt, paramsData, paramsBT, paramsRun):
         return False, ''
 
 
-def log(paramsTxt, paramsData, paramsRun, paramsBT, paramsPF, pf):
+def log(paramsTxt, paramsData, paramsRun, paramsBT, paramsPF, pf, entries, exits):
     
     resultsFolder, stratFolder, symbolFolder, itvFolder, namedir = \
         _getFoldersName(paramsData, paramsBT, paramsRun)
@@ -68,6 +69,8 @@ def log(paramsTxt, paramsData, paramsRun, paramsBT, paramsPF, pf):
         id = max(numfiles) + 1
 
     pf.stats().to_csv(f'{id}_stats.csv')
+    actions = pd.DataFrame({'entries': entries, 'exits': exits})
+    actions.to_csv(f'{id}_entries_exits.csv')
     utils.dict_to_txt(paramsTxt, f'{id}_params')
 
     os.chdir('../../../../..')

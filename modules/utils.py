@@ -1,8 +1,8 @@
 import os 
 import json
-import ast
 import collections
-import pprint
+import telegram
+import dotenv
 
 def debug(*args, sep = '\n',  **kwargs):
     if not 'sep' in kwargs.keys(): 
@@ -54,3 +54,15 @@ def regroupParams(paramsData, paramsRun, paramsBT, paramsPF):
     paramsTxt['paramsBT'] = paramsBT
     paramsTxt['paramsPF'] = paramsPF
     return paramsTxt
+
+def send_error_message(data, bt, pf, e):
+    dotenv.load_dotenv()
+    token = os.getenv('TOKEN')
+    channelId = os.getenv('CHANNEL_ID')
+    bot = telegram.Bot(token = token)
+    msg = f'An error occured with params:\n'
+    f'Data:\n{data}\n\n' 
+    f'BT:\n{bt}\n\n' 
+    f'PF:\n{pf}\n\n'
+    f'Got exception:\n{e}'
+    bot.send_message(chat_id = channelId, text = msg)
