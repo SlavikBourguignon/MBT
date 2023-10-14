@@ -8,6 +8,7 @@ import utils
 import telegram
 import dotenv
 import inspect
+import logging, json
 
 import warnings
 
@@ -118,12 +119,13 @@ def telegram_update_backtest(func):
         channelId = os.getenv('CHANNEL_ID')
         bot = telegram.Bot(token = token)
         bot.send_message(chat_id = channelId, text = msg)
+        logging.error(msg)
         
 
         res = func(*args, **kwargs)
 
         end = f'Finished execution of function {func.__name__} at {datetime.datetime.now()}'
-        #bot.send_message(chat_id = channelId, text = end)
+        bot.send_message(chat_id = channelId, text = end)
 
         return res
     
@@ -131,6 +133,15 @@ def telegram_update_backtest(func):
 
 def error_message_handling(func):
     
+    def handle_arg(arg):
+        if isinstance(arg, dict):
+            return json.dumps(arg, indent = 4, default = handle_arg)
+        
+        try :
+            return str(arg)
+        except:
+            return type(arg)
+        
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
 
@@ -140,14 +151,76 @@ def error_message_handling(func):
         except Exception as e:
             name_args = inspect.getfullargspec(func)
             msg = f'An error occured on function {func.__name__} with parameters:\n'
-            for name_arg, arg in  zip(name_args[1:], *args[1:]):
-                msg += f'{name_arg}: {arg}\n\n'
-
-            msg += f'Got exception:\n{e}\n\nProceeding'
+            for name_arg, arg in zip(name_args, args):
+                msg += f'{name_arg}: '
+                msg += handle_arg(arg)
+                msg += '\n'
+            msg += f'\nGot exception:\n{e}\n\nProceeding'
             dotenv.load_dotenv()
             token = os.getenv('TOKEN')
             channelId = os.getenv('CHANNEL_ID')
             bot = telegram.Bot(token = token)
             bot.send_message(chat_id = channelId, text = msg)
+            #logging.error(msg)
+            #utils.debug('args', args[1])
+
+
     
     return wrapper
+
+
+class ErrorMessage:
+    firstErrorInLoop = True
+
+    def __init__(self, reset):
+        
+        self.reset = reset
+
+    def __call__(self, func):
+
+        #if self.reset:
+        #    self._reset()
+
+        def handle_arg(arg):
+            if isinstance(arg, dict):
+                return json.dumps(arg, indent = 4, default = handle_arg)
+        
+            try :
+                return str(arg)
+            except:
+                return type(arg)
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            
+            #try:
+                utils.debug(func.__name__)
+                return func(*args, **kwargs)
+            
+            #except Exception as e:
+                utils.debug(e)
+                #if ErrorMessage.firstErrorInLoop:
+                name_args = inspect.getfullargspec(func)
+                msg = f'An error occured on function {func.__name__} with parameters:\n'
+                for name_arg, arg in zip(name_args, args):
+                    msg += f'{name_arg}: '
+                    msg += handle_arg(arg)
+                    msg += '\n'
+                msg += f'\nGot exception:\n{e}\n\nProceeding'
+                dotenv.load_dotenv()
+                token = os.getenv('TOKEN')
+                channelId = os.getenv('CHANNEL_ID')
+                bot = telegram.Bot(token = token)
+                #bot.send_message(chat_id = channelId, text = msg)
+                utils.debug(msg)
+                #self._update_error()
+
+        return wrapper
+    
+    def _reset(self):
+
+        ErrorMessage.firstErrorInLoop = True
+
+    def _update_error(self):
+        
+        ErrorMessage.firstErrorInLoop = False
