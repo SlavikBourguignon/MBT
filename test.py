@@ -12,14 +12,14 @@ import params_parser as pp
 import utils, logger
 import copy, json
 import ranking
-
+import bt_runner
 
 
 paramsData = {
         'download_params': {
-            'start': '2017-10-1',
+            'start': '2018-10-1',
             'end': '2023-1-1',
-            'symbols': 'BTCUSDT',
+            'symbols': ['BTCUSDT', 'ETHUSDT'],
             'interval': '1h',
             'show_progress': False   # To print the downloading progress   
         },
@@ -44,7 +44,7 @@ paramsBT = {
     'forward': {
         'weeks': 5  #durée pendant laquelle on joue les paramètres optimisés
     }, 
-    'optimizer': ['!max_drawdown!', '!total_return! - 2 * !max_drawdown!', '!sharpex_ratio!'] 
+    'optimizer': ['!max_drawdown!', '!total_return! - 2 * !max_drawdown!', '!sharpe_ratio!'] 
     #'param_product': True   
 }
 """
@@ -65,15 +65,20 @@ paramsPF = {
 }
 
 
-""" params = {'paramsData': paramsData, 'paramsRun': paramsRun, 'paramsBT': paramsBT, 'paramsPF': paramsPF}
-json.dumps(params)
-with open('params/TrixTest.json', 'w', encoding='utf-8') as f:
-    json.dump(params, f, ensure_ascii=False, indent=4) """
-Data, Run, BT, PF = pp.parse(paramsData, paramsRun, paramsBT, paramsPF)
+params = {'paramsData': paramsData, 'paramsRun': paramsRun, 'paramsBT': paramsBT, 'paramsPF': paramsPF}
+#json.dumps(params)
+#with open('params/TrixTest.json', 'w', encoding='utf-8') as f:
+#    json.dump(params, f, ensure_ascii=False, indent=4)
+
+bt_runner.run(params)
+
+
+
+"""Data, Run, BT, PF = pp.parse(paramsData, paramsRun, paramsBT, paramsPF)
 runTxt, run  = Run
 #logger.verifyTried(paramsTxt, Data, BT, Run)
 strat = Strat()
-"""
+
 for dataTxt, data in Data: 
     
     test = ForwardTest(data)
@@ -113,9 +118,11 @@ for dataTxt, data in Data:
                             'PF: ',pf,
                             'Got exception: ', e,
                             sep = '\n')
-"""
+
 results_df = ranking.get_results('results')
 
 conds = ['!End Value! > 120']
 sort_expr = '-!Max Drawdown [%]!'
 ranking.rank(results_df, sort_expr, conds)
+
+"""
